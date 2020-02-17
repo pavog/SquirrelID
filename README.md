@@ -1,4 +1,4 @@
-SquirrelID
+SquirrelID [![](https://jitpack.io/v/pavog/SquirrelID.svg)](https://jitpack.io/#pavog/SquirrelID)
 ==========
 
 SquirrelID is a Java library for working with Mojang profiles.
