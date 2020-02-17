@@ -29,6 +29,7 @@ import com.sk89q.squirrelid.Profile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -162,6 +163,17 @@ public class ParallelProfileService implements ProfileService {
                 throw new RuntimeException("Error occurred during the operation", throwable);
             }
         }
+    }
+
+    @Nullable
+    @Override
+    public Profile findById(UUID uuid) throws IOException, InterruptedException {
+        return null;
+    }
+
+    @Override
+    public ImmutableList<Profile> findAllById(Iterable<UUID> uuids) throws IOException, InterruptedException {
+        return null;
     }
 
 }

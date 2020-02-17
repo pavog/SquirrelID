@@ -33,7 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HashMapService extends SingleRequestService {
 
-    private final ConcurrentHashMap<String, UUID> map = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, UUID> nameToUUIDMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, String> uuidToNameMap = new ConcurrentHashMap<>();
 
     /**
      * Create a new instance.
@@ -49,7 +50,8 @@ public class HashMapService extends SingleRequestService {
      */
     public HashMapService(Map<String, UUID> map) {
         for (Map.Entry<String, UUID> entry : map.entrySet()) {
-            this.map.put(entry.getKey().toLowerCase(), entry.getValue());
+            this.nameToUUIDMap.put(entry.getKey().toLowerCase(), entry.getValue());
+            this.uuidToNameMap.put(entry.getValue(), entry.getKey());
         }
     }
 
@@ -59,7 +61,8 @@ public class HashMapService extends SingleRequestService {
      * @param profile the profile
      */
     public void put(Profile profile) {
-        this.map.put(profile.getName().toLowerCase(), profile.getUniqueId());
+        this.nameToUUIDMap.put(profile.getName().toLowerCase(), profile.getUniqueId());
+        this.uuidToNameMap.put(profile.getUniqueId(), profile.getName());
     }
 
     /**
@@ -81,12 +84,24 @@ public class HashMapService extends SingleRequestService {
     @Nullable
     @Override
     public Profile findByName(String name) throws IOException, InterruptedException {
-        UUID uuid = map.get(name.toLowerCase());
+        UUID uuid = nameToUUIDMap.get(name.toLowerCase());
         if (uuid != null) {
             return new Profile(uuid, name);
         } else {
             return null;
         }
     }
+
+    @Nullable
+    @Override
+    public Profile findById(UUID uuid) throws IOException, InterruptedException {
+        String name = uuidToNameMap.get(uuid);
+        if (name != null) {
+            return new Profile(uuid, name);
+        } else {
+            return null;
+        }
+    }
+
 
 }

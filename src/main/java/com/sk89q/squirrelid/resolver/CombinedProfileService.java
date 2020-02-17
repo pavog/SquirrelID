@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
@@ -128,6 +129,43 @@ public class CombinedProfileService implements ProfileService {
                 break;
             }
         }
+    }
+
+    @Nullable
+    @Override
+    public Profile findById(UUID uuid) throws IOException, InterruptedException {
+        for (ProfileService service : services) {
+            Profile profile = service.findById(uuid);
+            if (profile != null) {
+                return profile;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ImmutableList<Profile> findAllById(Iterable<UUID> uuids) throws IOException, InterruptedException {
+        List<UUID> missing = new ArrayList<>();
+        List<Profile> totalResults = new ArrayList<>();
+
+        for (UUID uuid : uuids) {
+            missing.add(uuid);
+        }
+
+        for (ProfileService service : services) {
+            ImmutableList<Profile> results = service.findAllById(missing);
+
+            for (Profile profile : results) {
+                missing.remove(profile.getUniqueId());
+                totalResults.add(profile);
+            }
+
+            if (missing.isEmpty()) {
+                break;
+            }
+        }
+
+        return ImmutableList.copyOf(totalResults);
     }
 
 }

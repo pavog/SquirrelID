@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.sk89q.squirrelid.Profile;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
@@ -48,6 +49,28 @@ abstract class SingleRequestService implements ProfileService {
     public final void findAllByName(Iterable<String> names, Predicate<Profile> consumer) throws IOException, InterruptedException {
         for (String name : names) {
             Profile profile = findByName(name);
+            if (profile != null) {
+                consumer.test(profile);
+            }
+        }
+    }
+
+    @Override
+    public final ImmutableList<Profile> findAllById(Iterable<UUID> uuids) throws IOException, InterruptedException {
+        Builder<Profile> builder = ImmutableList.builder();
+        for (UUID uuid : uuids) {
+            Profile profile = findById(uuid);
+            if (profile != null) {
+                builder.add(profile);
+            }
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final void findAllById(Iterable<UUID> uuids, Predicate<Profile> consumer) throws IOException, InterruptedException {
+        for (UUID uuid : uuids) {
+            Profile profile = findById(uuid);
             if (profile != null) {
                 consumer.test(profile);
             }

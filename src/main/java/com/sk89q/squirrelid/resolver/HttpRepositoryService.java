@@ -19,9 +19,6 @@
 
 package com.sk89q.squirrelid.resolver;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Iterables;
@@ -29,18 +26,16 @@ import com.sk89q.squirrelid.Profile;
 import com.sk89q.squirrelid.util.HttpRequest;
 import com.sk89q.squirrelid.util.UUIDs;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.annotation.Nullable;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Resolves names in bulk to UUIDs using Mojang's profile HTTP API.
@@ -69,6 +64,10 @@ public class HttpRepositoryService implements ProfileService {
     public HttpRepositoryService(String agent) {
         checkNotNull(agent);
         profilesURL = HttpRequest.url("https://api.mojang.com/profiles/" + agent);
+    }
+
+    public URL getNamesProfileUrl(UUID profileId) {
+        return HttpRequest.url("https://api.mojang.com/user/profiles/" + profileId.toString().replace("-", "") + "/names");
     }
 
     /**
@@ -129,7 +128,7 @@ public class HttpRepositoryService implements ProfileService {
     @Override
     public void findAllByName(Iterable<String> names, Predicate<Profile> consumer) throws IOException, InterruptedException {
         for (List<String> partition : Iterables.partition(names, MAX_NAMES_PER_REQUEST)) {
-            for (Profile profile : query(partition)) {
+            for (Profile profile : queryByName(partition)) {
                 consumer.test(profile);
             }
         }
@@ -139,7 +138,27 @@ public class HttpRepositoryService implements ProfileService {
     public ImmutableList<Profile> findAllByName(Iterable<String> names) throws IOException, InterruptedException {
         Builder<Profile> builder = ImmutableList.builder();
         for (List<String> partition : Iterables.partition(names, MAX_NAMES_PER_REQUEST)) {
-            builder.addAll(query(partition));
+            builder.addAll(queryByName(partition));
+        }
+        return builder.build();
+    }
+
+    @Nullable
+    @Override
+    public Profile findById(UUID uuid) throws IOException, InterruptedException {
+        ImmutableList<Profile> profiles = findAllById(Arrays.asList(uuid));
+        if (!profiles.isEmpty()) {
+            return profiles.get(0);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public ImmutableList<Profile> findAllById(Iterable<UUID> uuids) throws IOException, InterruptedException {
+        Builder<Profile> builder = ImmutableList.builder();
+        for (List<UUID> partition : Iterables.partition(uuids, MAX_NAMES_PER_REQUEST)) {
+            builder.addAll(queryByUuid(partition));
         }
         return builder.build();
     }
@@ -149,10 +168,10 @@ public class HttpRepositoryService implements ProfileService {
      *
      * @param names an iterable of names
      * @return a list of results
-     * @throws IOException thrown on I/O error
+     * @throws IOException          thrown on I/O error
      * @throws InterruptedException thrown on interruption
      */
-    protected ImmutableList<Profile> query(Iterable<String> names) throws IOException, InterruptedException {
+    protected ImmutableList<Profile> queryByName(Iterable<String> names) throws IOException, InterruptedException {
         List<Profile> profiles = new ArrayList<Profile>();
 
         Object result;
@@ -189,6 +208,62 @@ public class HttpRepositoryService implements ProfileService {
                     profiles.add(profile);
                 }
             }
+        }
+
+        return ImmutableList.copyOf(profiles);
+    }
+
+    /**
+     * Perform a query for profiles without partitioning the queries.
+     *
+     * @param uuids an iterable of UUIDs
+     * @return a list of results
+     * @throws IOException          thrown on I/O error
+     * @throws InterruptedException thrown on interruption
+     */
+    protected ImmutableList<Profile> queryByUuid(Iterable<UUID> uuids) throws IOException, InterruptedException {
+        List<Profile> profiles = new ArrayList<Profile>();
+
+        Object result;
+
+        int retriesLeft = maxRetries;
+        long retryDelay = this.retryDelay;
+
+
+        for (UUID uuid : uuids) {
+            try {
+                result = HttpRequest
+                        .get(getNamesProfileUrl(uuid))
+                        .execute()
+                        .returnContent()
+                        .asJson();
+
+                if (result instanceof Iterable) {
+                    String lastName = "";
+                    for (Object entry : (Iterable) result) {
+                        if (entry instanceof Map) {
+                            Map<Object, Object> mapEntry = (Map<Object, Object>) entry;
+                            Object rawName = mapEntry.get("name");
+
+                            if (rawName != null) {
+                                lastName = String.valueOf(rawName);
+                            }
+                        }
+                    }
+                    Profile profile = new Profile(uuid, lastName);
+                    profiles.add(profile);
+                }
+            } catch (IOException e) {
+                if (retriesLeft == 0) {
+                    throw e;
+                }
+
+                log.log(Level.WARNING, "Failed to query profile service -- retrying...", e);
+                Thread.sleep(retryDelay);
+            }
+
+            retryDelay *= 2;
+            retriesLeft--;
         }
 
         return ImmutableList.copyOf(profiles);

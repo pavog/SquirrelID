@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.sk89q.squirrelid.Profile;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
@@ -74,5 +75,36 @@ public interface ProfileService {
      * @throws InterruptedException thrown on interruption
      */
     void findAllByName(Iterable<String> names, Predicate<Profile> consumer) throws IOException, InterruptedException;
+
+    /**
+     * Query the profile server of a uuid.
+     *
+     * @param uuid the uuid
+     * @return the profile of the user, otherwise {@code null}
+     * @throws IOException thrown on I/O error
+     * @throws InterruptedException thrown on interruption
+     */
+    @Nullable
+    Profile findById(UUID uuid) throws IOException, InterruptedException;
+
+    /**
+     * Query the profile server for UUIDs for the given UUIDs.
+     *
+     * @param uuids an iterable containing uuids to search
+     * @return a list of found profiles
+     * @throws IOException thrown on I/O error
+     * @throws InterruptedException thrown on interruption
+     */
+    ImmutableList<Profile> findAllById(Iterable<UUID> uuids) throws IOException, InterruptedException;
+
+    /**
+     * Query the profile server for UUIDs for the given names.
+     *
+     * @param uuids an iterable containing uuids to search
+     * @param consumer a consumer function that will receive discovered profiles
+     * @throws IOException thrown on I/O error
+     * @throws InterruptedException thrown on interruption
+     */
+    void findAllById(Iterable<UUID> uuids, Predicate<Profile> consumer) throws IOException, InterruptedException;
 
 }
