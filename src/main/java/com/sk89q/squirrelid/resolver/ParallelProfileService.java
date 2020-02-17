@@ -19,25 +19,20 @@
 
 package com.sk89q.squirrelid.resolver;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Iterables;
 import com.sk89q.squirrelid.Profile;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.Predicate;
 
-import javax.annotation.Nullable;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Resolves profiles with several parallel threads using another resolver.
@@ -51,7 +46,7 @@ public class ParallelProfileService implements ProfileService {
     /**
      * Create a new parallel resolver.
      *
-     * @param resolver the resolver to use
+     * @param resolver        the resolver to use
      * @param executorService the executor service to schedule jobs in
      */
     public ParallelProfileService(ProfileService resolver, ExecutorService executorService) {
@@ -168,12 +163,61 @@ public class ParallelProfileService implements ProfileService {
     @Nullable
     @Override
     public Profile findById(UUID uuid) throws IOException, InterruptedException {
-        return null;
+        return resolver.findById(uuid);
     }
 
     @Override
     public ImmutableList<Profile> findAllById(Iterable<UUID> uuids) throws IOException, InterruptedException {
-        return null;
+        CompletionService<List<Profile>> completion = new ExecutorCompletionService<>(executorService);
+        int count = 0;
+        for (final List<UUID> partition : Iterables.partition(uuids, getEffectiveProfilesPerJob())) {
+            count++;
+            completion.submit(() -> resolver.findAllById(partition));
+        }
+
+        Builder<Profile> builder = ImmutableList.builder();
+        for (int i = 0; i < count; i++) {
+            try {
+                builder.addAll(completion.take().get());
+            } catch (ExecutionException e) {
+                if (e.getCause() instanceof IOException) {
+                    throw (IOException) e.getCause();
+                } else {
+                    throw new RuntimeException("Error occurred during the operation", e);
+                }
+            }
+        }
+        return builder.build();
+    }
+
+    @Override
+    public void findAllById(Iterable<UUID> uuids, Predicate<Profile> consumer) throws IOException, InterruptedException {
+        CompletionService<Object> completion = new ExecutorCompletionService<>(executorService);
+        int count = 0;
+        for (final List<UUID> partition : Iterables.partition(uuids, getEffectiveProfilesPerJob())) {
+            count++;
+            completion.submit(() -> {
+                resolver.findAllById(partition, consumer);
+                return null;
+            });
+        }
+
+        Throwable throwable = null;
+        for (int i = 0; i < count; i++) {
+            try {
+                completion.take().get();
+            } catch (ExecutionException e) {
+                throwable = e.getCause();
+            }
+        }
+
+        if (throwable != null) {
+            if (throwable instanceof IOException) {
+                throw (IOException) throwable;
+            } else {
+                throw new RuntimeException("Error occurred during the operation", throwable);
+            }
+        }
     }
 
 }

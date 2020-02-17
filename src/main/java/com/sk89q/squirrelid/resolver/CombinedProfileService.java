@@ -168,4 +168,26 @@ public class CombinedProfileService implements ProfileService {
         return ImmutableList.copyOf(totalResults);
     }
 
+    @Override
+    public void findAllById(Iterable<UUID> uuids, Predicate<Profile> consumer) throws IOException, InterruptedException {
+        final List<UUID> missing = Collections.synchronizedList(new ArrayList<>());
+
+        Predicate<Profile> forwardingConsumer = profile -> {
+            missing.remove(profile.getUniqueId());
+            return consumer.test(profile);
+        };
+
+        for (UUID uuid : uuids) {
+            missing.add(uuid);
+        }
+
+        for (ProfileService service : services) {
+            service.findAllById(new ArrayList<>(missing), forwardingConsumer);
+
+            if (missing.isEmpty()) {
+                break;
+            }
+        }
+    }
+
 }

@@ -163,6 +163,15 @@ public class HttpRepositoryService implements ProfileService {
         return builder.build();
     }
 
+    @Override
+    public void findAllById(Iterable<UUID> uuids, Predicate<Profile> consumer) throws IOException, InterruptedException {
+        for (List<UUID> partition : Iterables.partition(uuids, MAX_NAMES_PER_REQUEST)) {
+            for (Profile profile : queryByUuid(partition)) {
+                consumer.test(profile);
+            }
+        }
+    }
+
     /**
      * Perform a query for profiles without partitioning the queries.
      *

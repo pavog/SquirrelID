@@ -104,5 +104,13 @@ public class CacheForwardingService implements ProfileService {
         return profiles;
     }
 
+    @Override
+    public void findAllById(Iterable<UUID> uuids, Predicate<Profile> consumer) throws IOException, InterruptedException {
+        resolver.findAllById(uuids, input -> {
+            cache.put(input);
+            return consumer.test(input);
+        });
+    }
+
 
 }
