@@ -2,7 +2,7 @@ SquirrelID
 ==========
 [![Build Status](http://img.shields.io/travis/com/pavog/SquirrelID/master.svg?style=flat-square)](https://travis-ci.com/pavog/SquirrelID)
 [![Coverage Status](http://img.shields.io/coveralls/pavog/SquirrelID/master.svg?style=flat-square)](https://coveralls.io/r/pavog/SquirrelID?branch=master)
-[![JitPack](https://img.shields.io/jitpack/v/github/pavog/SquirrelID?style=flat-square)](https://jitpack.io/#pavog/SquirrelID)
+[![JitPack](https://img.shields.io/jitpack/v/github/pavog/SquirrelID?color=brightgreen&style=flat-square)](https://jitpack.io/#pavog/SquirrelID)
 
 SquirrelID is a Java library for working with Mojang profiles.
 
