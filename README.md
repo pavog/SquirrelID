@@ -1,4 +1,4 @@
-SquirrelID [![](https://jitpack.io/v/pavog/SquirrelID.svg)](https://jitpack.io/#pavog/SquirrelID)
+SquirrelID [![Build Status](https://travis-ci.com/pavog/SquirrelID.svg?branch=master)](https://travis-ci.com/pavog/SquirrelID) [![](https://jitpack.io/v/pavog/SquirrelID.svg)](https://jitpack.io/#pavog/SquirrelID)
 ==========
 
 SquirrelID is a Java library for working with Mojang profiles.
@@ -33,7 +33,7 @@ ImmutableList<Profile> profiles = resolver.findAllByName(Arrays.asList("Notch", 
 And in parallel:
 
 ```java
-int nThreads = 2; // Be kind
+int nThreads = 2; // Be kind 
 ProfileService resolver = HttpRepositoryService.forMinecraft();
 ParallelProfileService service = new ParallelProfileService(resolver, nThreads);
 service.findAllByName(Arrays.asList("Notch", "jeb_"), new Predicate<Profile>() {
