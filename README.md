@@ -3,16 +3,21 @@ SquirrelID [![](https://jitpack.io/v/pavog/SquirrelID.svg)](https://jitpack.io/#
 
 SquirrelID is a Java library for working with Mojang profiles.
 
+Functions included in the original upstream repository at [EngineHub/SquirrelID](https://github.com/EngineHub/SquirrelID)
 * The resolution of UUIDs from player names in bulk.
 * "Last seen" UUID -> name cache implementations.
   * Available as SQLite-backed or in-memory.
 * Thread-safe implementations.
 * Optional parallel fetching of UUIDs from player names.
 
+Functions added in this fork:
+* Reverse resolution: Get name for UUID
+* Reverse resolution in bulk
+
 Usage
 -----
 
-#### Resolver
+#### Resolver: Name -> UUID
 
 ```java
 ProfileService resolver = HttpRepositoryService.forMinecraft();
@@ -89,7 +94,7 @@ As a dependency
 
 Note: We recommend shading or shadowing in SquirrelID for distribution, **relocating** the `com.sk89q.squirrelid` package to an internal package without your project.
 
-#### Maven
+#### Maven (original repository)
 
 ```xml
 <repositories>
@@ -112,7 +117,30 @@ Note: We recommend shading or shadowing in SquirrelID for distribution, **reloca
 </dependencies>
 ```
 
-#### Gradle
+#### Maven (this fork)
+
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.github.pavog</groupId>
+        <artifactId>SquirrelID</artifactId>
+        <version>0.6.1</version>
+        <scope>compile</scope>
+        <type>jar</type>
+    </dependency>
+</dependencies>
+```
+
+#### Gradle (original repository)
 
 ```groovy
 repositories {
@@ -121,6 +149,18 @@ repositories {
 
 dependencies {
     compile 'com.sk89q:squirrelid:0.2.0'
+}
+```
+
+#### Gradle (this fork)
+
+```groovy
+repositories {
+    maven { url "https://jitpack.io" }
+}
+
+dependencies {
+    compile 'com.github.pavog:SquirrelID:0.6.1'
 }
 ```
 
